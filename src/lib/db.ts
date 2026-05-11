@@ -4,7 +4,6 @@
 
 export interface Env {
   DB: D1Database;
-  ASSETS: R2Bucket;
   AUTH_SECRET: string;
   AUTH_URL: string;
   NEXT_PUBLIC_APP_NAME: string;
