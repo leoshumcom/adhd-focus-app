@@ -10,8 +10,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const [parent, children] = await Promise.all([
       db.prepare('SELECT id, email, name, theme, children_count FROM parents WHERE id = ?').bind(userId).first() as any,
@@ -51,8 +50,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { user_id, theme } = await request.json();
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     if (user_id && theme) {
       await db.prepare('UPDATE parents SET theme = ? WHERE id = ?').bind(theme, user_id).run();

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid, now } from '@/lib/db';
+import { uuid, now, getDB } from '@/lib/db';
 
 // POST /api/auth/register
 export async function POST(request: Request) {
@@ -7,19 +7,14 @@ export async function POST(request: Request) {
     const { email, password, name, childName, childGender } = await request.json();
 
     if (!email || !password || !name) {
-      return NextResponse.json({ error: '请填写必填信息' }, { status: 400 });
+      return NextResponse.json({ error: '请填写必填信�? }, { status: 400 });
     }
 
     if (password.length < 6) {
-      return NextResponse.json({ error: '密码至少6位' }, { status: 400 });
+      return NextResponse.json({ error: '密码至少6�? }, { status: 400 });
     }
 
-    const env = process.env as any;
-    if (!env.DB) {
-      return NextResponse.json({ error: '数据库连接失败' }, { status: 500 });
-    }
-
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     // Check if email already exists
     const existing = await db.prepare(

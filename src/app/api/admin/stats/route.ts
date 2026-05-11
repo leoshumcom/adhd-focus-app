@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
+import { getDB } from '@/lib/db';
 
 // GET /api/admin/stats - Global statistics
 export async function GET() {
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const [totalUsers, totalChildren, todayCheckins, totalCheckins] = await Promise.all([
       db.prepare('SELECT COUNT(*) as count FROM parents').first() as any,

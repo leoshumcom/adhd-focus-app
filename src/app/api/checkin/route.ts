@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid, today } from '@/lib/db';
+import { getDB, uuid, today } from '@/lib/db'
 
 // GET /api/checkin?child_id=xxx
 export async function GET(request: Request) {
@@ -12,8 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     // Get today's checkin
     const checkin = await db.prepare(
@@ -58,8 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'child_id required' }, { status: 400 });
     }
 
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     // Check if already checked in today
     const existing = await db.prepare(
@@ -67,7 +65,7 @@ export async function POST(request: Request) {
     ).bind(child_id, date).first() as any;
 
     if (existing) {
-      return NextResponse.json({ error: '今日已打卡' }, { status: 409 });
+      return NextResponse.json({ error: '今日已打�? }, { status: 409 });
     }
 
     const id = uuid();
@@ -109,13 +107,13 @@ export async function POST(request: Request) {
       await db.prepare(
         `INSERT OR IGNORE INTO badges (id, child_id, badge_type, badge_name, earned_date)
          VALUES (?, ?, ?, ?, ?)`
-      ).bind(uuid(), child_id, 'streak_7', '连续7天打卡', date).run();
+      ).bind(uuid(), child_id, 'streak_7', '连续7天打�?, date).run();
     }
     if (newStreak === 30) {
       await db.prepare(
         `INSERT OR IGNORE INTO badges (id, child_id, badge_type, badge_name, earned_date)
          VALUES (?, ?, ?, ?, ?)`
-      ).bind(uuid(), child_id, 'streak_30', '连续30天打卡', date).run();
+      ).bind(uuid(), child_id, 'streak_30', '连续30天打�?, date).run();
     }
 
     return NextResponse.json({

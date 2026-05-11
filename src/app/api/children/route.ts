@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid } from '@/lib/db';
+import { getDB, uuid } from '@/lib/db'
 
 // GET /api/children?parent_id=xxx
 export async function GET(request: Request) {
@@ -11,8 +11,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const children = await db.prepare(
       'SELECT * FROM children WHERE parent_id = ? ORDER BY created_at'
@@ -34,8 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const id = uuid();
 

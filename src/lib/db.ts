@@ -11,12 +11,34 @@ export interface Env {
 
 let _db: D1Database | null = null;
 
-export function getDB(env?: Env): D1Database {
-  if (env?.DB) {
-    _db = env.DB;
+/** Get the Cloudflare runtime env context (D1, KV, etc.) */
+function getCloudflareEnv(): Record<string, any> {
+  // OpenNext stores the Cloudflare env in AsyncLocalStorage
+  try {
+    const ctx = (globalThis as any)[Symbol.for('__cloudflare-context__')];
+    if (ctx?.env) return ctx.env;
+  } catch {}
+  // Fallback: check process.env as provided by OpenNext init
+  return process.env as any;
+}
+
+export function getDB(): D1Database {
+  if (_db) return _db;
+
+  // Try Cloudflare runtime env (D1 binding is an object, not string)
+  const cloudflareEnv = getCloudflareEnv();
+  if (cloudflareEnv.DB) {
+    _db = cloudflareEnv.DB;
     return _db;
   }
-  if (_db) return _db;
+
+  // Fallback: try process.env (OpenNext populates string-typed bindings there)
+  const processEnv = process.env as any;
+  if (processEnv.DB) {
+    _db = processEnv.DB;
+    return _db;
+  }
+
   throw new Error('D1 database not available - check environment binding');
 }
 

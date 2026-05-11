@@ -11,18 +11,13 @@ export async function POST(request: Request) {
 
     // Validate credentials against D1 database
     // This endpoint is called by next-auth authorize callback
-    const env = process.env as any;
-    if (!env.DB) {
-      return NextResponse.json({ error: '数据库连接失败' }, { status: 500 });
-    }
-
-    const db = env.DB as any;
+    const db = getDB();
     const result = await db.prepare(
       'SELECT id, email, name, is_admin FROM parents WHERE email = ? AND password_hash = ? AND is_active = 1'
     ).bind(email, password).first() as any;
 
     if (!result) {
-      return NextResponse.json({ error: '邮箱或密码错误' }, { status: 401 });
+      return NextResponse.json({ error: '邮箱或密码错�? }, { status: 401 });
     }
 
     return NextResponse.json({

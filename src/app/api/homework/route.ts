@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid, today } from '@/lib/db';
+import { getDB, uuid, today } from '@/lib/db'
 
 // GET /api/homework?child_id=xxx
 export async function GET(request: Request) {
@@ -11,8 +11,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const tasks = await db.prepare(
       'SELECT * FROM homework_tasks WHERE child_id = ? AND is_active = 1 ORDER BY sort_order'
@@ -46,8 +45,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     // Get next sort order
     const maxOrder = await db.prepare(
@@ -78,8 +76,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
     const date = today();
 
     // Check if already completed today
@@ -126,8 +123,7 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
     await db.prepare('UPDATE homework_tasks SET is_active = 0 WHERE id = ?').bind(id).run();
     return NextResponse.json({ success: true });
   } catch (error) {

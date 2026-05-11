@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid, today } from '@/lib/db';
+import { getDB, uuid, today } from '@/lib/db'
 
 // GET /api/games?child_id=xxx&date=2026-05-11
 export async function GET(request: Request) {
@@ -12,8 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const games = await db.prepare(
       'SELECT * FROM game_records WHERE child_id = ? AND checkin_date = ? ORDER BY created_at'
@@ -45,8 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     // Check daily limit (once per game per day)
     const existing = await db.prepare(

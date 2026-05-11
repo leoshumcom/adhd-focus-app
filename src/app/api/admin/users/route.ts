@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
+import { getDB } from '@/lib/db';
 
 // GET /api/admin/users - List all parents (admin only)
 export async function GET() {
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const users = await db.prepare(
       `SELECT p.id, p.email, p.name, p.is_active, p.is_admin, p.created_at,
@@ -25,8 +25,7 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const { user_id, action } = await request.json(); // action: 'enable' | 'disable' | 'delete'
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     if (action === 'enable' || action === 'disable') {
       const isActive = action === 'enable' ? 1 : 0;

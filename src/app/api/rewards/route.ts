@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid } from '@/lib/db';
+import { getDB, uuid } from '@/lib/db'
 
 // GET /api/rewards?parent_id=xxx&child_id=xxx
 export async function GET(request: Request) {
@@ -12,8 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     // Get rewards
     const rewards = await db.prepare(
@@ -52,8 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     const id = uuid();
 
@@ -79,8 +77,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
 
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
 
     // Check child has enough points
     const child = await db.prepare('SELECT total_points FROM children WHERE id = ?').bind(child_id).first() as any;
@@ -98,7 +95,7 @@ export async function PUT(request: Request) {
       const idx = Math.floor(Math.random() * rewards.results.length);
       selectedReward = rewards.results[idx];
     } else {
-      selectedReward = { name: '再来一次', cost_points: 0 };
+      selectedReward = { name: '再来一�?, cost_points: 0 };
     }
 
     // Deduct points
@@ -140,8 +137,7 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const env = process.env as any;
-    const db = env.DB as D1Database;
+    const db = getDB();
     await db.prepare('UPDATE rewards SET is_active = 0 WHERE id = ?').bind(id).run();
     return NextResponse.json({ success: true });
   } catch (error) {
