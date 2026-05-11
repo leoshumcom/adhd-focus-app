@@ -16,10 +16,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '数据库连接失败' }, { status: 500 });
     }
 
-    const db = env.DB as D1Database;
+    const db = env.DB as any;
     const result = await db.prepare(
       'SELECT id, email, name, is_admin FROM parents WHERE email = ? AND password_hash = ? AND is_active = 1'
-    ).bind(email, password).first();
+    ).bind(email, password).first() as any;
 
     if (!result) {
       return NextResponse.json({ error: '邮箱或密码错误' }, { status: 401 });
