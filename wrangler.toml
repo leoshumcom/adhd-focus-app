@@ -1,0 +1,11 @@
+# ADHD Focus App - Wrangler Config
+# Used for local development only
+# Cloudflare Pages deployment config is set via API / Dashboard
+
+name = "adhd-focus-app"
+pages_build_output_dir = ".open-next"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "adhd-focus-db"
+database_id = "18771ffa-7422-4330-8eb0-fc58cf593087"
