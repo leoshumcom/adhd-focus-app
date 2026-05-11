@@ -18,14 +18,14 @@ export async function GET(request: Request) {
     // Get rewards
     const rewards = await db.prepare(
       'SELECT * FROM rewards WHERE parent_id = ? AND is_active = 1 ORDER BY sort_order'
-    ).bind(parentId).all();
+    ).bind(parentId).all() as any;
 
     // Get spin history for child
     let spins: any[] = [];
     if (childId) {
       const result = await db.prepare(
         'SELECT * FROM spin_records WHERE child_id = ? ORDER BY created_at DESC LIMIT 20'
-      ).bind(childId).all();
+      ).bind(childId).all() as any;
       spins = result.results;
     }
 
@@ -91,7 +91,7 @@ export async function PUT(request: Request) {
     // Get active rewards
     const rewards = await db.prepare(
       'SELECT * FROM rewards WHERE parent_id = ? AND is_active = 1 ORDER BY sort_order'
-    ).bind(parent_id).all();
+    ).bind(parent_id).all() as any;
 
     let selectedReward: any;
     if (rewards.results.length > 0) {
