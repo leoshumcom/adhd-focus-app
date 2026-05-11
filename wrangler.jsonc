@@ -1,9 +1,8 @@
 {
   "name": "adhd-focus-app",
-  "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-11",
   "compatibility_flags": ["nodejs_compat"],
-  "pages_build_output_dir": ".vercel/output",
+  "pages_build_output_dir": ".open-next",
   "d1_databases": [
     {
       "binding": "DB",
