@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDB, uuid } from '@/lib/db'
+import { uuid } from '@/lib/db';
 
 // GET /api/rewards?parent_id=xxx&child_id=xxx
 export async function GET(request: Request) {
@@ -17,14 +17,14 @@ export async function GET(request: Request) {
     // Get rewards
     const rewards = await db.prepare(
       'SELECT * FROM rewards WHERE parent_id = ? AND is_active = 1 ORDER BY sort_order'
-    ).bind(parentId).all() as any;
+    ).bind(parentId).all();
 
     // Get spin history for child
     let spins: any[] = [];
     if (childId) {
       const result = await db.prepare(
         'SELECT * FROM spin_records WHERE child_id = ? ORDER BY created_at DESC LIMIT 20'
-      ).bind(childId).all() as any;
+      ).bind(childId).all();
       spins = result.results;
     }
 
@@ -88,14 +88,14 @@ export async function PUT(request: Request) {
     // Get active rewards
     const rewards = await db.prepare(
       'SELECT * FROM rewards WHERE parent_id = ? AND is_active = 1 ORDER BY sort_order'
-    ).bind(parent_id).all() as any;
+    ).bind(parent_id).all();
 
     let selectedReward: any;
     if (rewards.results.length > 0) {
       const idx = Math.floor(Math.random() * rewards.results.length);
       selectedReward = rewards.results[idx];
     } else {
-      selectedReward = { name: '再来一�?, cost_points: 0 };
+      selectedReward = { name: '再来一次', cost_points: 0 };
     }
 
     // Deduct points
