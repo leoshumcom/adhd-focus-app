@@ -17,12 +17,12 @@ export async function GET(request: Request) {
 
     const games = await db.prepare(
       'SELECT * FROM game_records WHERE child_id = ? AND checkin_date = ? ORDER BY created_at'
-    ).bind(childId, date).all();
+    ).bind(childId, date).all() as any;
 
     // Get today's checkin status
     const checkin = await db.prepare(
       'SELECT id FROM daily_checkins WHERE child_id = ? AND checkin_date = ?'
-    ).bind(childId, date).first();
+    ).bind(childId, date).first() as any;
 
     return NextResponse.json({
       games: games.results,
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     // Check daily limit (once per game per day)
     const existing = await db.prepare(
       'SELECT id FROM game_records WHERE child_id = ? AND game_type = ? AND checkin_date = ?'
-    ).bind(child_id, game_type, date).first();
+    ).bind(child_id, game_type, date).first() as any;
 
     if (existing) {
       return NextResponse.json({ error: '该游戏今日已完成' }, { status: 409 });
