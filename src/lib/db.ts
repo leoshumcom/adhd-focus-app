@@ -23,20 +23,20 @@ function getCloudflareEnv(): Record<string, any> {
 }
 
 export function getDB(): D1Database {
-  if (_db) return _db;
+  if (_db) return _db!;
 
   // Try Cloudflare runtime env (D1 binding is an object, not string)
   const cloudflareEnv = getCloudflareEnv();
   if (cloudflareEnv.DB) {
     _db = cloudflareEnv.DB;
-    return _db;
+    return _db!;
   }
 
   // Fallback: try process.env (OpenNext populates string-typed bindings there)
   const processEnv = process.env as any;
   if (processEnv.DB) {
     _db = processEnv.DB;
-    return _db;
+    return _db!;
   }
 
   throw new Error('D1 database not available - check environment binding');
