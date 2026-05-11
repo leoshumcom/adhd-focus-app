@@ -24,7 +24,7 @@ export default function ProfilePage() {
   const [mounted, setMounted] = useState(false);
 
   const [children, setChildren] = useState<ChildInfo[]>(() => {
-    const saved = localStorage.getItem('adhd-children');
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('adhd-children') : null;
     if (saved) {
       try { return JSON.parse(saved); } catch {}
     }
@@ -46,11 +46,11 @@ export default function ProfilePage() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    localStorage.setItem('adhd-children', JSON.stringify(children));
+    if (typeof window !== 'undefined') localStorage.setItem('adhd-children', JSON.stringify(children));
   }, [children]);
 
   useEffect(() => {
-    const points = localStorage.getItem('adhd-points');
+    const points = typeof window !== 'undefined' ? localStorage.getItem('adhd-points') : null;
     const totalPoints = points ? parseInt(points, 10) : children.reduce((s, c) => s + c.points, 0);
     const streakDays = Math.max(...children.map((c) => c.streak), 0);
     setStats({
