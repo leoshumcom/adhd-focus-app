@@ -5,10 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "pages:build": "npx @opennextjs/cloudflare build",
-    "preview": "npx @opennextjs/cloudflare build && npx wrangler pages dev .open-next",
-    "deploy": "npx @opennextjs/cloudflare deploy",
-    "upload": "npx @opennextjs/cloudflare upload",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "preview": "npx wrangler pages dev .vercel/output/static",
+    "deploy": "npx wrangler pages deploy .vercel/output/static --project-name=adhd-focus-app",
     "start": "next start",
     "lint": "eslint"
   },
@@ -27,7 +26,7 @@
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "@opennextjs/cloudflare": "^1.19.0",
+    "@cloudflare/next-on-pages": "^1.13.0",
     "wrangler": "^4.0.0",
     "@cloudflare/workers-types": "^4.0.0"
   }
