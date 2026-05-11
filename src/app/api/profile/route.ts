@@ -14,14 +14,14 @@ export async function GET(request: Request) {
     const db = env.DB as D1Database;
 
     const [parent, children] = await Promise.all([
-      db.prepare('SELECT id, email, name, theme, children_count FROM parents WHERE id = ?').bind(userId).first(),
-      db.prepare('SELECT * FROM children WHERE parent_id = ? ORDER BY created_at').bind(userId).all(),
+      db.prepare('SELECT id, email, name, theme, children_count FROM parents WHERE id = ?').bind(userId).first() as any,
+      db.prepare('SELECT * FROM children WHERE parent_id = ? ORDER BY created_at').bind(userId).all() as any,
     ]);
 
     // Get badges for all children
     const badges = await db.prepare(
       'SELECT b.*, c.name as child_name FROM badges b JOIN children c ON b.child_id = c.id WHERE c.parent_id = ? ORDER BY b.earned_date DESC'
-    ).bind(userId).all();
+    ).bind(userId).all() as any;
 
     // Get total checkin stats
     const stats = await db.prepare(
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
        LEFT JOIN homework_records hr ON c.id = hr.child_id
        LEFT JOIN (SELECT child_id, SUM(COALESCE(score,0) + 5) as total_game_points FROM game_records WHERE completed = 1 GROUP BY child_id) gr ON c.id = gr.child_id
        WHERE c.parent_id = ?`
-    ).bind(userId).first();
+    ).bind(userId).first() as any;
 
     return NextResponse.json({
       parent,
