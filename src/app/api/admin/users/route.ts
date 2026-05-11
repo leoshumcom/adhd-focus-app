@@ -12,7 +12,7 @@ export async function GET() {
               (SELECT COUNT(*) FROM daily_checkins dc JOIN children c ON dc.child_id = c.id WHERE c.parent_id = p.id AND dc.checkin_date = date('now')) as today_active
        FROM parents p
        ORDER BY p.created_at DESC`
-    ).all();
+    ).all() as any;
 
     return NextResponse.json({ users: users.results });
   } catch (error) {
