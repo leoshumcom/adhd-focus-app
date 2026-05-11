@@ -7,15 +7,15 @@ export async function GET() {
     const db = env.DB as D1Database;
 
     const [totalUsers, totalChildren, todayCheckins, totalCheckins] = await Promise.all([
-      db.prepare('SELECT COUNT(*) as count FROM parents').first(),
-      db.prepare('SELECT COUNT(*) as count FROM children').first(),
-      db.prepare('SELECT COUNT(*) as count FROM daily_checkins WHERE checkin_date = date(\'now\')').first(),
-      db.prepare('SELECT COUNT(*) as count FROM daily_checkins').all(),
+      db.prepare('SELECT COUNT(*) as count FROM parents').first() as any,
+      db.prepare('SELECT COUNT(*) as count FROM children').first() as any,
+      db.prepare('SELECT COUNT(*) as count FROM daily_checkins WHERE checkin_date = date(\'now\')').first() as any,
+      db.prepare('SELECT COUNT(*) as count FROM daily_checkins').all() as any,
     ]);
 
     const todayGames = await db.prepare(
       'SELECT COUNT(*) as count FROM game_records WHERE checkin_date = date(\'now\')'
-    ).first();
+    ).first() as any;
 
     return NextResponse.json({
       totalUsers: (totalUsers as any)?.count || 0,
