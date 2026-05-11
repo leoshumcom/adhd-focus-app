@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid, now } from '@/lib/db';
+import { uuid, now, getDB } from '@/lib/db';
 
 // POST /api/auth/register
 export async function POST(request: Request) {
