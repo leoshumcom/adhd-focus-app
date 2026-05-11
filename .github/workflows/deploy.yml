@@ -22,13 +22,8 @@ jobs:
           rm -f package-lock.json
           npm install --no-package-lock --legacy-peer-deps
 
-      - name: Build with OpenNext
-        run: npx @opennextjs/cloudflare build
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-
-      - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy .open-next --project-name=adhd-focus-app --branch main
+      - name: Build and Deploy with OpenNext
+        run: npx @opennextjs/cloudflare deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
