@@ -18,7 +18,9 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: |
+          rm -f package-lock.json
+          npm install --no-package-lock --legacy-peer-deps
 
       - name: Build with OpenNext
         run: npx @opennextjs/cloudflare build
