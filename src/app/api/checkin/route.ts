@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uuid, today } from '@/lib/db';
+import { uuid, today, getDB } from '@/lib/db';
 
 // GET /api/checkin?child_id=xxx
 export async function GET(request: Request) {
