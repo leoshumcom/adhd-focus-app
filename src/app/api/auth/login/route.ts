@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getDB } from '@/lib/db';
 
 // POST /api/auth/login - Validate credentials against D1
 export async function POST(request: Request) {
