@@ -1,0 +1,25 @@
+{
+  "name": "adhd-focus-app",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": ".vercel/output",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "adhd-focus-db",
+      "database_id": "18771ffa-7422-4330-8eb0-fc58cf593087"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "adhd-focus-assets"
+    }
+  ],
+  "vars": {
+    "AUTH_SECRET": "adhd-focus-jwt-secret-change-in-production",
+    "AUTH_URL": "https://adhd.66ge.com",
+    "NEXT_PUBLIC_APP_NAME": "ADHD专注力闯关"
+  }
+}

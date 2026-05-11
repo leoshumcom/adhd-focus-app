@@ -1,0 +1,21 @@
+{
+  "name": "ADHD专注力闯关",
+  "short_name": "ADHD闯关",
+  "description": "儿童专注力训练打卡平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF5F5",
+  "theme_color": "#FF8FAB",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

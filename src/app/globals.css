@@ -1,0 +1,317 @@
+/* ADHD Focus App - Global Styles & Theme System */
+
+@import "tailwindcss";
+
+/* =============================================
+   EGG THEME (蛋仔派对风) - Default
+   ============================================= */
+:root, [data-theme="egg"] {
+  /* Primary palette */
+  --bg-primary: #FFF5F5;
+  --bg-secondary: #FFE4EC;
+  --bg-card: #FFFFFF;
+  --bg-button: #FF8FAB;
+  --bg-button-hover: #FF6B97;
+  
+  /* Text */
+  --text-primary: #553045;
+  --text-secondary: #8B6B7B;
+  --text-button: #FFFFFF;
+  
+  /* Accent */
+  --accent-primary: #FF8FAB;
+  --accent-secondary: #C29BFF;
+  --accent-tertiary: #FFD93D;
+  --accent-blue: #7EC8E3;
+  --accent-green: #8BC48A;
+  
+  /* Borders */
+  --border-default: #FFD1DC;
+  --border-radius: 1.5rem;
+  --border-radius-sm: 1rem;
+  --border-radius-xs: 0.75rem;
+  
+  /* Shadows */
+  --shadow-card: 0 4px 20px rgba(255, 143, 171, 0.15);
+  --shadow-button: 0 4px 12px rgba(255, 143, 171, 0.3);
+  
+  /* Misc */
+  --font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --bg-gradient: linear-gradient(180deg, #FFF5F5 0%, #FFE4EC 50%, #F8F0FF 100%);
+  
+  /* Egg-specific assets */
+  --egg-bg-pattern: radial-gradient(circle at 10% 20%, rgba(255, 194, 209, 0.3) 0%, transparent 50%);
+}
+
+/* Egg Theme Component Styles */
+[data-theme="egg"] .btn-primary {
+  background: linear-gradient(135deg, #FF8FAB, #FF6B97);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-button);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border: 3px solid #FF6B97;
+  transition: all 0.2s;
+  font-family: var(--font-family);
+}
+
+[data-theme="egg"] .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 151, 0.4);
+}
+
+[data-theme="egg"] .btn-primary:active {
+  transform: translateY(0);
+}
+
+[data-theme="egg"] .card {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-card);
+  border: 2px solid var(--border-default);
+  padding: 1.5rem;
+}
+
+[data-theme="egg"] .card:hover {
+  box-shadow: 0 8px 30px rgba(255, 143, 171, 0.2);
+}
+
+[data-theme="egg"] .progress-bar {
+  background: linear-gradient(90deg, #FF8FAB, #C29BFF);
+  border-radius: 999px;
+  height: 12px;
+}
+
+[data-theme="egg"] .progress-track {
+  background: #FFE4EC;
+  border-radius: 999px;
+  height: 12px;
+}
+
+[data-theme="egg"] .badge-egg {
+  background: linear-gradient(135deg, #FFD93D, #FFB347);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(255, 217, 61, 0.4);
+}
+
+/* =============================================
+   MINECRAFT THEME (我的世界像素风)
+   ============================================= */
+[data-theme="minecraft"] {
+  /* Primary palette */
+  --bg-primary: #3B8526;
+  --bg-secondary: #5DA832;
+  --bg-card: #A87D4D;
+  --bg-button: #6B8C42;
+  --bg-button-hover: #7DA852;
+  
+  /* Text */
+  --text-primary: #1A1A1A;
+  --text-secondary: #3B3B3B;
+  --text-button: #FFFFFF;
+  
+  /* Accent */
+  --accent-primary: #6B8C42;
+  --accent-secondary: #4A9BD9;
+  --accent-tertiary: #FFD700;
+  --accent-blue: #4A9BD9;
+  --accent-green: #7BC47F;
+  
+  /* Borders */
+  --border-default: #5C3A1E;
+  --border-radius: 0.25rem;
+  --border-radius-sm: 0.125rem;
+  --border-radius-xs: 0rem;
+  
+  /* Shadows */
+  --shadow-card: 4px 4px 0px #3B3B3B;
+  --shadow-button: 3px 3px 0px #3B3B3B;
+  
+  /* Misc */
+  --font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+  --bg-gradient: linear-gradient(180deg, #87CEEB 0%, #5DA832 30%, #3B8526 100%);
+  
+  /* MC-specific assets */
+  --mc-bg-pattern: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 16px,
+    rgba(139, 119, 63, 0.1) 16px,
+    rgba(139, 119, 63, 0.1) 17px
+  );
+}
+
+/* Minecraft Theme Component Styles */
+[data-theme="minecraft"] .btn-primary {
+  background: #8B8B8B;
+  border: 4px solid #3B3B3B;
+  border-top-color: #D4D4D4;
+  border-left-color: #D4D4D4;
+  border-bottom-color: #1A1A1A;
+  border-right-color: #1A1A1A;
+  color: white;
+  font-weight: bold;
+  padding: 0.6rem 2rem;
+  font-family: var(--font-family);
+  text-transform: uppercase;
+  image-rendering: pixelated;
+  box-shadow: var(--shadow-button);
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+[data-theme="minecraft"] .btn-primary:hover {
+  background: #A0A0A0;
+}
+
+[data-theme="minecraft"] .btn-primary:active {
+  border-top-color: #1A1A1A;
+  border-left-color: #1A1A1A;
+  border-bottom-color: #D4D4D4;
+  border-right-color: #D4D4D4;
+}
+
+[data-theme="minecraft"] .card {
+  background: #A87D4D;
+  border: 4px solid #5C3A1E;
+  border-top-color: #C8A86E;
+  border-left-color: #C8A86E;
+  border-bottom-color: #3B2510;
+  border-right-color: #3B2510;
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem;
+}
+
+[data-theme="minecraft"] .progress-bar {
+  background: #7BC47F;
+  height: 8px;
+  border: 2px solid #3B8526;
+}
+
+[data-theme="minecraft"] .progress-track {
+  background: #4A6E30;
+  height: 8px;
+  border: 2px solid #3B8526;
+}
+
+[data-theme="minecraft"] .badge-egg {
+  display: none; /* MC theme doesn't use egg badges */
+}
+
+/* =============================================
+   GLOBAL SHARED STYLES
+   ============================================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* App container */
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Bottom navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border-top: 2px solid var(--border-default);
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem 0;
+  z-index: 100;
+}
+
+.bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  gap: 0.2rem;
+  transition: all 0.2s;
+}
+
+.bottom-nav a.active {
+  color: var(--accent-primary);
+}
+
+.bottom-nav a .nav-icon {
+  font-size: 1.5rem;
+}
+
+/* Page padding for bottom nav */
+.page-content {
+  padding-bottom: 5rem;
+}
+
+/* Animation helpers */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--accent-primary); }
+  50% { box-shadow: 0 0 20px var(--accent-primary); }
+}
+
+@keyframes spin-wheel {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Pixel font for MC theme */
+@font-face {
+  font-family: 'Minecraft';
+  src: local('Courier New');
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
