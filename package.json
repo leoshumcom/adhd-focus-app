@@ -26,6 +26,6 @@
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "@opennextjs/cloudflare": "^0.6.0"
+    "@opennextjs/cloudflare": "^1.19.0"
   }
 }
