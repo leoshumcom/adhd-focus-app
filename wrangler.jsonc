@@ -10,12 +10,6 @@
       "database_id": "18771ffa-7422-4330-8eb0-fc58cf593087"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA_BUCKET",
-      "bucket_name": "adhd-focus-assets"
-    }
-  ],
   "vars": {
     "AUTH_SECRET": "adhd-focus-jwt-secret-change-in-production",
     "AUTH_URL": "https://adhd.66ge.com",
