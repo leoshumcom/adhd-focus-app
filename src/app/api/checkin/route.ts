@@ -18,22 +18,22 @@ export async function GET(request: Request) {
     // Get today's checkin
     const checkin = await db.prepare(
       'SELECT * FROM daily_checkins WHERE child_id = ? AND checkin_date = ?'
-    ).bind(childId, date).first();
+    ).bind(childId, date).first() as any;
 
     // Get games completed today
     const games = await db.prepare(
       'SELECT game_type, completed FROM game_records WHERE child_id = ? AND checkin_date = ?'
-    ).bind(childId, date).all();
+    ).bind(childId, date).all() as any;
 
     // Get homework completed today
     const homework = await db.prepare(
       'SELECT COUNT(*) as count FROM homework_records WHERE child_id = ? AND checkin_date = ? AND completed = 1'
-    ).bind(childId, date).first();
+    ).bind(childId, date).first() as any;
 
     // Get child's total points and streak
     const child = await db.prepare(
       'SELECT total_points, streak_days, last_checkin_date FROM children WHERE id = ?'
-    ).bind(childId).first();
+    ).bind(childId).first() as any;
 
     return NextResponse.json({
       checkin,
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     // Check if already checked in today
     const existing = await db.prepare(
       'SELECT id FROM daily_checkins WHERE child_id = ? AND checkin_date = ?'
-    ).bind(child_id, date).first();
+    ).bind(child_id, date).first() as any;
 
     if (existing) {
       return NextResponse.json({ error: '今日已打卡' }, { status: 409 });
