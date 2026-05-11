@@ -1,13 +1,10 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import type { NextAuthConfig } from 'next-auth';
+import type { NextAuthOptions } from 'next-auth';
 
 // Extend built-in types
 declare module 'next-auth' {
   interface User {
-    id: string;
-    name: string;
-    email: string;
     is_admin?: number;
     role?: string;
   }
@@ -22,8 +19,7 @@ declare module 'next-auth' {
   }
 }
 
-// In production, these are passed via env bindings
-export const config = {
+export const authOptions: NextAuthOptions = {
   providers: [
     Credentials({
       name: 'credentials',
@@ -34,11 +30,10 @@ export const config = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // TODO: Implement actual DB lookup via fetch to /api/auth/login
-        // This runs on the edge, so we make an internal request
         try {
+          const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || '';
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/auth/login`,
+            `${baseUrl}/api/auth/login`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -63,7 +58,7 @@ export const config = {
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id;
         token.is_admin = user.is_admin;
@@ -71,7 +66,7 @@ export const config = {
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.is_admin = token.is_admin as number | undefined;
@@ -82,8 +77,9 @@ export const config = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 7 * 24 * 60 * 60,
   },
-} satisfies NextAuthConfig;
+};
 
-export const { handlers, auth, signIn, signOut } = NextAuth(config);
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
