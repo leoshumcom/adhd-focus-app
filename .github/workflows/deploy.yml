@@ -22,7 +22,12 @@ jobs:
           rm -f package-lock.json
           npm install --no-package-lock --legacy-peer-deps
 
-      - name: Build and Deploy with OpenNext
+      - name: Build with OpenNext
+        run: npx @opennextjs/cloudflare build
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      - name: Deploy to Cloudflare Pages
         run: npx @opennextjs/cloudflare deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
