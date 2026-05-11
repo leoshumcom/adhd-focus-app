@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from '@/lib/theme-context';
+import AuthSessionProvider from '@/lib/session-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -29,11 +30,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body>
-        <ThemeProvider>
-          <div className="app-container">
-            {children}
-          </div>
-        </ThemeProvider>
+        <AuthSessionProvider>
+          <ThemeProvider>
+            <div className="app-container">
+              {children}
+            </div>
+          </ThemeProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );
