@@ -16,12 +16,12 @@ export async function GET(request: Request) {
 
     const tasks = await db.prepare(
       'SELECT * FROM homework_tasks WHERE child_id = ? AND is_active = 1 ORDER BY sort_order'
-    ).bind(childId).all();
+    ).bind(childId).all() as any;
 
     const date = today();
     const completed = await db.prepare(
       'SELECT task_id FROM homework_records WHERE child_id = ? AND checkin_date = ? AND completed = 1'
-    ).bind(childId, date).all();
+    ).bind(childId, date).all() as any;
 
     const completedIds = new Set(completed.results.map((r: any) => r.task_id));
 
@@ -85,7 +85,7 @@ export async function PUT(request: Request) {
     // Check if already completed today
     const existing = await db.prepare(
       'SELECT id FROM homework_records WHERE task_id = ? AND checkin_date = ?'
-    ).bind(task_id, date).first();
+    ).bind(task_id, date).first() as any;
 
     if (existing) {
       return NextResponse.json({ error: '该作业今日已完成' }, { status: 409 });
