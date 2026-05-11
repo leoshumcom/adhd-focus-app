@@ -1,3 +1,4 @@
+import { getDB } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
 // GET /api/profile?user_id=xxx
