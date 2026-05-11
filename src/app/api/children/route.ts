@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     const children = await db.prepare(
       'SELECT * FROM children WHERE parent_id = ? ORDER BY created_at'
-    ).bind(parentId).all();
+    ).bind(parentId).all() as any;
 
     return NextResponse.json({ children: children.results });
   } catch (error) {
