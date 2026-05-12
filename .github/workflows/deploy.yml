@@ -25,9 +25,10 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
-      - name: Copy worker for Pages Functions
+      - name: Copy worker & add static file serving
         run: |
           cp .open-next/worker.js .open-next/_worker.js
+          node scripts/patch-worker.cjs .open-next/_worker.js
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy .open-next --project-name=adhd-focus-app --branch main
