@@ -53,3 +53,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '添加孩子失败' }, { status: 500 });
   }
 }
+
+
+// DELETE /api/children - Remove a child
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    if (!body.child_id) {
+      return NextResponse.json({ error: 'child_id required' }, { status: 400 });
+    }
+    const db = getDB();
+    await db.prepare('DELETE FROM children WHERE id = ?').bind(body.child_id).run();
+    if (body.parent_id) {
+      await db.prepare('UPDATE parents SET children_count = MAX(0, children_count - 1) WHERE id = ?').bind(body.parent_id).run();
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Child delete error:', error);
+    return NextResponse.json({ error: '删除失败' }, { status: 500 });
+  }
+}
