@@ -171,13 +171,11 @@ export default function TrainPage() {
               padding: '0.85rem',
               cursor: checkedIn ? 'pointer' : 'not-allowed',
               textAlign: 'center',
-              opacity: checkedIn ? 1 : 0.6,
+              opacity: 1,
               transition: 'all 0.2s',
             }}
             onClick={() => {
-              if (checkedIn) {
-                router.push(`/train/${game.id}`);
-              }
+              router.push(`/train/${game.id}`);
             }}
           >
             <div style={{ fontSize: '2.2rem', marginBottom: '0.3rem' }}>{game.icon}</div>
