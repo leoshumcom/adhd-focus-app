@@ -50,10 +50,20 @@ export async function GET(request: Request) {
 // POST /api/checkin - Complete daily checkin
 export async function POST(request: Request) {
   try {
-    const { child_id } = await request.json();
+    const { child_id, parent_id } = await request.json();
     const date = today();
 
-    if (!child_id) {
+    // If no child_id but parent_id provided, find first child
+    let activeChildId = child_id;
+    if (!activeChildId && parent_id) {
+      const db = getDB();
+      const firstChild = await db.prepare(
+        'SELECT id FROM children WHERE parent_id = ? ORDER BY created_at LIMIT 1'
+      ).bind(parent_id).first() as any;
+      if (firstChild) activeChildId = firstChild.id;
+    }
+
+    if (!activeChildId) {
       return NextResponse.json({ error: 'child_id required' }, { status: 400 });
     }
 
@@ -62,7 +72,7 @@ export async function POST(request: Request) {
     // Check if already checked in today
     const existing = await db.prepare(
       'SELECT id FROM daily_checkins WHERE child_id = ? AND checkin_date = ?'
-    ).bind(child_id, date).first();
+    ).bind(activeChildId, date).first();
 
     if (existing) {
       return NextResponse.json({ error: '今日已打卡' }, { status: 409 });
@@ -75,12 +85,12 @@ export async function POST(request: Request) {
     await db.prepare(
       `INSERT INTO daily_checkins (id, child_id, checkin_date, points_earned)
        VALUES (?, ?, ?, ?)`
-    ).bind(id, child_id, date, bonusPoints).run();
+    ).bind(id, activeChildId, date, bonusPoints).run();
 
     // Update child streak
     const child = await db.prepare(
       'SELECT last_checkin_date, streak_days FROM children WHERE id = ?'
-    ).bind(child_id).first() as any;
+    ).bind(activeChildId).first() as any;
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -94,26 +104,26 @@ export async function POST(request: Request) {
     // Update child
     await db.prepare(
       `UPDATE children SET total_points = total_points + ?, streak_days = ?, last_checkin_date = ? WHERE id = ?`
-    ).bind(bonusPoints, newStreak, date, child_id).run();
+    ).bind(bonusPoints, newStreak, date, activeChildId).run();
 
     // Record points transaction
     await db.prepare(
       `INSERT INTO point_transactions (id, child_id, points, transaction_type, reference_id, note)
        VALUES (?, ?, ?, ?, ?, ?)`
-    ).bind(uuid(), child_id, bonusPoints, 'checkin_bonus', id, '每日打卡奖励').run();
+    ).bind(uuid(), activeChildId, bonusPoints, 'checkin_bonus', id, '每日打卡奖励').run();
 
     // Check for badge milestones
     if (newStreak === 7) {
       await db.prepare(
         `INSERT OR IGNORE INTO badges (id, child_id, badge_type, badge_name, earned_date)
          VALUES (?, ?, ?, ?, ?)`
-      ).bind(uuid(), child_id, 'streak_7', '连续7天打卡', date).run();
+      ).bind(uuid(), activeChildId, 'streak_7', '连续7天打卡', date).run();
     }
     if (newStreak === 30) {
       await db.prepare(
         `INSERT OR IGNORE INTO badges (id, child_id, badge_type, badge_name, earned_date)
          VALUES (?, ?, ?, ?, ?)`
-      ).bind(uuid(), child_id, 'streak_30', '连续30天打卡', date).run();
+      ).bind(uuid(), activeChildId, 'streak_30', '连续30天打卡', date).run();
     }
 
     return NextResponse.json({
