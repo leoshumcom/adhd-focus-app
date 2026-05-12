@@ -306,6 +306,26 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Footer Banner */}
+      <div style={{
+        marginTop: '1.5rem',
+        padding: '0.6rem 0.8rem',
+        background: theme === 'egg'
+          ? 'linear-gradient(135deg, #FFE4EC, #F8F0FF)'
+          : '#A87D4D',
+        borderRadius: theme === 'egg' ? '0.75rem' : '0px',
+        border: theme === 'minecraft'
+          ? '4px solid #5C3A1E'
+          : '2px solid var(--border-default)',
+        textAlign: 'center',
+        fontSize: '0.7rem',
+        color: theme === 'minecraft' ? '#fff' : 'var(--text-secondary)',
+        lineHeight: 1.5,
+        marginBottom: '0.75rem',
+      }}>
+        本工具由沈采奕奕爸爸制作（抖音号：7SEO）您可以加抖音主页群提出您的建议，您的反馈十分重要！
+      </div>
+
       {/* Logout */}
       <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', marginBottom:'1rem' }}>
         <button className="btn-primary" onClick={handleLogout} style={{ width:'100%', padding:'0.6rem', fontSize:'0.9rem' }}>
