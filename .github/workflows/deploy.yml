@@ -25,11 +25,27 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
-      - name: Create _worker.js with static file handling
-        run: node scripts/patch-worker.cjs
+      - name: Prepare pages-deploy structure
+        run: |
+          # Move assets to deploy root, keep worker at root as _worker.js
+          rm -rf pages-deploy
+          mkdir -p pages-deploy
+          # Copy all assets (Next.js static files) to root
+          cp -r .open-next/assets/* pages-deploy/
+          # Copy worker as _worker.js
+          cp .open-next/worker.js pages-deploy/_worker.js
+          # Inject static file passthrough into _worker.js
+          node -e "
+const fs = require('fs');
+let c = fs.readFileSync('pages-deploy/_worker.js','utf8');
+const old = '// - \`Request\`s are handled by the Next server\n            const reqOrResp = await middlewareHandler(request, env, ctx);';
+const next = '// - Serve static assets\n            try { const sr = await env.ASSETS.fetch(new URL(request.url)); if (sr.status < 400) return sr; } catch {}\n            // - \`Request\`s are handled by the Next server\n            const reqOrResp = await middlewareHandler(request, env, ctx);';
+if (c.includes(old)) { c = c.replace(old, next); fs.writeFileSync('pages-deploy/_worker.js',c,'utf8'); console.log('Patched OK'); }
+else { console.log('WARN: pattern not found, using original'); }
+"
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy .open-next --project-name=adhd-focus-app --branch main
+        run: npx wrangler pages deploy pages-deploy --project-name=adhd-focus-app --branch main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
