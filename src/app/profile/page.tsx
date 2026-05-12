@@ -39,36 +39,37 @@ export default function ProfilePage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Load children from API when session is ready
+  // Load children on mount: try API first, fallback to localStorage, then defaults
   useEffect(() => {
-    if (!session?.user?.id) return;
-
     const loadChildren = async () => {
       setLoadingChildren(true);
-      try {
-        const res = await fetch(`/api/children?parent_id=${session.user.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.children && data.children.length > 0) {
-            const mapped: ChildInfo[] = data.children.map((c: any) => ({
-              id: c.id,
-              name: c.name,
-              age: c.age || c.birth_date || '5',
-              gender: c.gender || '' as 'boy' | 'girl' | '',
-              points: c.total_points || 0,
-              streak: c.streak_days || 0,
-            }));
-            setChildren(mapped);
-            // Also cache in localStorage
-            localStorage.setItem('adhd-children', JSON.stringify(mapped));
-            return;
+
+      // Try API first if session available
+      const parentId = (session?.user as any)?.id;
+      if (parentId) {
+        try {
+          const res = await fetch(`/api/children?parent_id=${parentId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.children && data.children.length > 0) {
+              const mapped: ChildInfo[] = data.children.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                age: '5',
+                gender: c.gender || '',
+                points: c.total_points || 0,
+                streak: c.streak_days || 0,
+              }));
+              setChildren(mapped);
+              localStorage.setItem('adhd-children', JSON.stringify(mapped));
+              setLoadingChildren(false);
+              return;
+            }
           }
-        }
-      } catch {
-        // Fallback to localStorage
+        } catch { /* fall through */ }
       }
 
-      // Fallback: load from localStorage
+      // Fallback: load from localStorage (always present, survives logout)
       const saved = localStorage.getItem('adhd-children');
       if (saved) {
         try {
@@ -81,9 +82,9 @@ export default function ProfilePage() {
         } catch {}
       }
 
-      // Default fallback
+      // Final fallback: default sample child
       setChildren([
-        { id: '1', name: '小明', age: '8', gender: 'boy', points: 230, streak: 5 },
+        { id: 'local-1', name: '小明', age: '8', gender: 'boy', points: 230, streak: 5 },
       ]);
       setLoadingChildren(false);
     };
@@ -91,82 +92,76 @@ export default function ProfilePage() {
     loadChildren();
   }, [session]);
 
-  // Save to localStorage as cache
+  // Sync children to localStorage whenever they change
   useEffect(() => {
-    if (typeof window !== 'undefined' && children.length > 0) {
+    if (children.length > 0) {
       localStorage.setItem('adhd-children', JSON.stringify(children));
     }
   }, [children]);
 
   // Compute stats
   useEffect(() => {
-    const points = typeof window !== 'undefined' ? localStorage.getItem('adhd-points') : null;
-    const totalPoints = points ? parseInt(points, 10) : children.reduce((s, c) => s + c.points, 0);
+    const totalPoints = children.reduce((s, c) => s + c.points, 0);
     const streakDays = Math.max(...children.map((c) => c.streak), 0);
-    setStats({
-      totalPoints,
-      streakDays,
-      badges: 3,
-      completedGames: 24,
-      totalFocusMinutes: 180,
-    });
+    setStats({ totalPoints, streakDays, badges: 3, completedGames: 24, totalFocusMinutes: 180 });
   }, [children]);
 
-  // Add child - sync to API
+  // Add child - save to both API and localStorage
   const addChild = async () => {
     if (!newChild.name.trim()) return;
 
-    if (!session?.user?.id) {
-      setChildError('请先登录');
-      return;
-    }
+    const child: ChildInfo = {
+      id: 'local-' + Date.now(),
+      name: newChild.name.trim(),
+      age: newChild.age || '5',
+      gender: newChild.gender,
+      points: 0,
+      streak: 0,
+    };
 
-    setSavingChild(true);
-    setChildError('');
+    // Save locally immediately
+    setChildren((prev) => [...prev, child]);
 
-    try {
-      const res = await fetch('/api/children', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          parent_id: session.user.id,
-          name: newChild.name.trim(),
-          gender: newChild.gender || 'boy',
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || '添加失败');
-      }
-
-      const data = await res.json();
-
-      const child: ChildInfo = {
-        id: data.childId || Date.now().toString(),
-        name: newChild.name.trim(),
-        age: newChild.age || '5',
-        gender: newChild.gender,
-        points: 0,
-        streak: 0,
-      };
-
-      setChildren((prev) => [...prev, child]);
-      setNewChild({ name: '', age: '', gender: '' });
-      setShowAddChild(false);
-    } catch (error: any) {
-      setChildError(error.message || '添加孩子失败，请稍后重试');
-    } finally {
+    // Save to API if possible
+    const parentId = (session?.user as any)?.id;
+    if (parentId) {
+      setSavingChild(true);
+      try {
+        await fetch('/api/children', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parent_id: parentId, name: newChild.name.trim(), gender: newChild.gender || 'boy' }),
+        });
+      } catch { /* API save failed - localStorage backup is fine */ }
       setSavingChild(false);
     }
+
+    setNewChild({ name: '', age: '', gender: '' });
+    setShowAddChild(false);
+    setChildError('');
   };
 
-  const removeChild = (id: string) => {
+  const removeChild = async (id: string) => {
+    const prev = children;
     setChildren((prev) => prev.filter((c) => c.id !== id));
+    // Sync removal to API
+    const parentId = (session?.user as any)?.id;
+    if (parentId && !id.startsWith('local-')) {
+      try {
+        await fetch('/api/children', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ child_id: id, parent_id: parentId }),
+        });
+      } catch {
+        // API delete failed, restore from prev
+        setChildren(prev);
+      }
+    }
   };
 
   const handleLogout = async () => {
-    localStorage.removeItem('adhd-children');
+    // Keep localStorage - don't clear children
     await signOut({ callbackUrl: '/' });
   };
 
@@ -201,30 +196,11 @@ export default function ProfilePage() {
     <div className="page-content" style={{ paddingTop: '1.5rem' }}>
       {/* Profile Header */}
       <div className="card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <div
-          className="animate-float"
-          style={{
-            width: '72px',
-            height: '72px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '2rem',
-            margin: '0 auto 0.5rem',
-            border: '3px solid var(--border-default)',
-            color: 'white',
-          }}
-        >
+        <div className="animate-float" style={{ width:'72px',height:'72px',borderRadius:'50%',background:'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem',margin:'0 auto 0.5rem',border:'3px solid var(--border-default)',color:'white' }}>
           {session?.user?.name?.[0] || (theme === 'egg' ? '🥚' : '⛏️')}
         </div>
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-          {session?.user?.name || '家长'}
-        </h2>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          {session?.user?.email || '家长账号'}
-        </p>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{session?.user?.name || '家长'}</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{session?.user?.email || '家长账号'}</p>
       </div>
 
       {/* Stats Grid */}
@@ -245,44 +221,19 @@ export default function ProfilePage() {
         </h3>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {(['egg', 'minecraft'] as Theme[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTheme(t)}
-              style={{
-                flex: 1,
-                padding: '0.6rem',
-                borderRadius: theme === 'egg' ? '1rem' : '0px',
-                border: `3px solid ${theme === t ? 'var(--accent-primary)' : 'var(--border-default)'}`,
-                background: theme === t ? 'var(--bg-button)' : 'white',
-                color: theme === t ? 'white' : 'var(--text-primary)',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-family)',
-                fontWeight: 'bold',
-                fontSize: '0.85rem',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.3rem',
-              }}
-            >
+            <button key={t} onClick={() => setTheme(t)} style={{
+              flex: 1, padding: '0.6rem',
+              borderRadius: theme === 'egg' ? '1rem' : '0px',
+              border: `3px solid ${theme === t ? 'var(--accent-primary)' : 'var(--border-default)'}`,
+              background: theme === t ? 'var(--bg-button)' : 'white',
+              color: theme === t ? 'white' : 'var(--text-primary)',
+              cursor: 'pointer', fontFamily: 'var(--font-family)', fontWeight: 'bold', fontSize: '0.85rem',
+              transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
+            }}>
               <span style={{ fontSize: '1.2rem' }}>{t === 'egg' ? '🥚' : '⛏️'}</span>
               <span>{t === 'egg' ? '蛋仔派对' : '我的世界'}</span>
             </button>
           ))}
-        </div>
-        <div style={{
-          marginTop: '0.5rem',
-          padding: '0.4rem',
-          borderRadius: theme === 'egg' ? '0.75rem' : '0px',
-          background: 'var(--bg-secondary)',
-          textAlign: 'center',
-          fontSize: '0.75rem',
-          color: 'var(--text-secondary)',
-        }}>
-          {theme === 'egg'
-            ? '🥚 粉色可爱风格，适合低龄儿童'
-            : '⛏️ 像素方块风格，适合喜欢Minecraft的孩子'}
         </div>
       </div>
 
@@ -292,67 +243,25 @@ export default function ProfilePage() {
           <h3 style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
             {theme === 'egg' ? '👨‍👩‍👧‍👦 孩子管理' : '⛏️ CHILD MANAGEMENT'}
           </h3>
-          <button
-            className="btn-primary"
-            onClick={() => setShowAddChild(true)}
-            style={{ padding: '0.25rem 0.8rem', fontSize: '0.75rem' }}
-          >
-            + 添加孩子
-          </button>
+          <button className="btn-primary" onClick={() => setShowAddChild(true)}
+            style={{ padding: '0.25rem 0.8rem', fontSize: '0.75rem' }}>+ 添加孩子</button>
         </div>
 
         {loadingChildren ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '1rem 0' }}>
-            加载中...
-          </div>
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '1rem 0' }}>加载中...</div>
         ) : children.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '1rem 0' }}>
-            还没有添加孩子
-          </div>
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '1rem 0' }}>还没有添加孩子</div>
         ) : (
           children.map((child) => (
-            <div
-              key={child.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.6rem 0',
-                borderBottom: '1px solid var(--border-default)',
-              }}
-            >
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: child.gender === 'boy' ? '#7EC8E3' : '#FFB3C6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.3rem',
-              }}>
+            <div key={child.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', borderBottom: '1px solid var(--border-default)' }}>
+              <div style={{ width:'40px',height:'40px',borderRadius:'50%',background: child.gender === 'boy' ? '#7EC8E3' : '#FFB3C6',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.3rem' }}>
                 {child.gender === 'boy' ? '👦' : (child.gender === 'girl' ? '👧' : '🧒')}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{child.name}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                  {child.age}岁 · ⭐ {child.points}分 · 🔥 {child.streak}天
-                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{child.age}岁 · ⭐ {child.points}分 · 🔥 {child.streak}天</div>
               </div>
-              <button
-                onClick={() => removeChild(child.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#FF6B6B',
-                  fontSize: '1.1rem',
-                  cursor: 'pointer',
-                  padding: '0.2rem',
-                }}
-                title="移除"
-              >
-                ✕
-              </button>
+              <button onClick={() => removeChild(child.id)} style={{ background:'none', border:'none', color:'#FF6B6B', fontSize:'1.1rem', cursor:'pointer', padding:'0.2rem' }} title="移除">✕</button>
             </div>
           ))
         )}
@@ -360,154 +269,54 @@ export default function ProfilePage() {
 
       {/* Add Child Modal */}
       {showAddChild && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 200,
-            padding: '1rem',
-          }}
-          onClick={() => setShowAddChild(false)}
-        >
-          <div
-            className="card"
-            style={{ width: '100%', maxWidth: '360px' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
-              {theme === 'egg' ? '➕ 添加孩子' : '➕ ADD CHILD'}
-            </h3>
-
-            {childError && (
-              <div
-                style={{
-                  background: '#FFF0F0',
-                  border: '1px solid #FF6B6B',
-                  borderRadius: theme === 'egg' ? '0.75rem' : '0px',
-                  padding: '0.4rem 0.6rem',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.8rem',
-                  color: '#CC0000',
-                  textAlign: 'center',
-                }}
-              >
-                {childError}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'1rem' }}
+          onClick={() => setShowAddChild(false)}>
+          <div className="card" style={{ width:'100%', maxWidth:'360px' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize:'1rem', fontWeight:'bold', marginBottom:'0.75rem' }}>{theme === 'egg' ? '➕ 添加孩子' : '➕ ADD CHILD'}</h3>
+            {childError && <div style={{ background:'#FFF0F0', border:'1px solid #FF6B6B', borderRadius: theme === 'egg' ? '0.75rem' : '0px', padding:'0.4rem 0.6rem', marginBottom:'0.5rem', fontSize:'0.8rem', color:'#CC0000', textAlign:'center' }}>{childError}</div>}
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', fontWeight: 'bold' }}>名字</label>
-                <input
-                  type="text"
-                  value={newChild.name}
-                  onChange={(e) => setNewChild((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="输入孩子名字"
-                  autoFocus
-                  style={inputStyle}
-                />
+                <label style={{ display:'block', marginBottom:'0.2rem', fontSize:'0.8rem', fontWeight:'bold' }}>名字</label>
+                <input type="text" value={newChild.name} onChange={(e) => setNewChild(p => ({...p, name: e.target.value}))} placeholder="输入孩子名字" autoFocus style={inputStyle} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', fontWeight: 'bold' }}>年龄</label>
-                <input
-                  type="number"
-                  value={newChild.age}
-                  onChange={(e) => setNewChild((p) => ({ ...p, age: e.target.value }))}
-                  placeholder="几岁"
-                  min={3}
-                  max={18}
-                  style={inputStyle}
-                />
+                <label style={{ display:'block', marginBottom:'0.2rem', fontSize:'0.8rem', fontWeight:'bold' }}>年龄</label>
+                <input type="number" value={newChild.age} onChange={(e) => setNewChild(p => ({...p, age: e.target.value}))} placeholder="几岁" min={3} max={18} style={inputStyle} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', fontWeight: 'bold' }}>性别</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {(['boy', 'girl'] as const).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setNewChild((p) => ({ ...p, gender: p.gender === g ? '' : g }))}
-                      style={{
-                        flex: 1,
-                        padding: '0.5rem',
-                        borderRadius: theme === 'egg' ? '1rem' : '0px',
-                        border: `2px solid ${newChild.gender === g ? 'var(--accent-primary)' : 'var(--border-default)'}`,
-                        background: newChild.gender === g ? 'var(--bg-button)' : 'white',
-                        color: newChild.gender === g ? 'white' : 'var(--text-primary)',
-                        cursor: 'pointer',
-                        fontFamily: 'var(--font-family)',
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      {g === 'boy' ? '👦 男孩' : '👧 女孩'}
-                    </button>
+                <label style={{ display:'block', marginBottom:'0.2rem', fontSize:'0.8rem', fontWeight:'bold' }}>性别</label>
+                <div style={{ display:'flex', gap:'0.5rem' }}>
+                  {(['boy','girl'] as const).map((g) => (
+                    <button key={g} type="button" onClick={() => setNewChild(p => ({...p, gender: p.gender === g ? '' : g}))} style={{
+                      flex:1, padding:'0.5rem', borderRadius: theme === 'egg' ? '1rem' : '0px',
+                      border: `2px solid ${newChild.gender === g ? 'var(--accent-primary)' : 'var(--border-default)'}`,
+                      background: newChild.gender === g ? 'var(--bg-button)' : 'white',
+                      color: newChild.gender === g ? 'white' : 'var(--text-primary)', cursor:'pointer',
+                      fontFamily:'var(--font-family)', fontSize:'0.85rem',
+                    }}>{g === 'boy' ? '👦 男孩' : '👧 女孩'}</button>
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                <button
-                  className="btn-primary"
-                  onClick={addChild}
-                  disabled={!newChild.name.trim() || savingChild}
-                  style={{ flex: 1, fontSize: '0.85rem', padding: '0.5rem' }}
-                >
-                  {savingChild ? '保存中...' : '添加'}
-                </button>
-                <button
-                  onClick={() => { setShowAddChild(false); setChildError(''); }}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem',
-                    borderRadius: theme === 'egg' ? '1rem' : '0px',
-                    border: '2px solid var(--border-default)',
-                    background: 'white',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-family)',
-                  }}
-                >
-                  取消
-                </button>
+              <div style={{ display:'flex', gap:'0.5rem', marginTop:'0.25rem' }}>
+                <button className="btn-primary" onClick={addChild} disabled={!newChild.name.trim()} style={{ flex:1, fontSize:'0.85rem', padding:'0.5rem' }}>添加</button>
+                <button onClick={() => { setShowAddChild(false); setChildError(''); }} style={{ flex:1, padding:'0.5rem', borderRadius: theme === 'egg' ? '1rem' : '0px', border:'2px solid var(--border-default)', background:'white', fontSize:'0.85rem', cursor:'pointer', fontFamily:'var(--font-family)' }}>取消</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Logout & Version */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-        <button
-          className="btn-primary"
-          onClick={handleLogout}
-          style={{
-            width: '100%',
-            padding: '0.6rem',
-            fontSize: '0.9rem',
-            background: theme === 'egg'
-              ? 'linear-gradient(135deg, #FF6B6B, #EE5A24)'
-              : undefined,
-          }}
-        >
+      {/* Logout */}
+      <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', marginBottom:'1rem' }}>
+        <button className="btn-primary" onClick={handleLogout} style={{ width:'100%', padding:'0.6rem', fontSize:'0.9rem' }}>
           {theme === 'egg' ? '🚪 退出登录' : '▶ LOGOUT'}
         </button>
-        <div style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-          ADHD专注力闯关 v1.0.0
-        </div>
       </div>
 
       {/* Bottom Navigation */}
       <nav className="bottom-nav">
         {navItems.map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            onClick={(e) => { e.preventDefault(); router.push(item.href); }}
-            className={pathname === item.href ? 'active' : ''}
-          >
+          <a key={item.href} href={item.href} onClick={(e) => { e.preventDefault(); router.push(item.href); }} className={pathname === item.href ? 'active' : ''}>
             <span className="nav-icon">{item.icon}</span>
             <span>{item.label}</span>
           </a>
