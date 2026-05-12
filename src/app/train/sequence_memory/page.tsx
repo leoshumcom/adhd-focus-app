@@ -161,7 +161,7 @@ export default function SequenceMemoryGame() {
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}">长度</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>长度</div>
             <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--accent-secondary)' }}>
               {Math.min(2 + level, 8)}
             </div>
