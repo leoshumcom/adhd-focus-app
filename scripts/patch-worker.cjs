@@ -1,10 +1,12 @@
 const fs = require('fs');
 const workerPath = process.argv[2] || '.open-next/_worker.js';
-const sourcePath = process.argv[3] || '.open-next/worker.js';
+const sourcePath = process.argv[3] || null;
 
-// Copy worker.js to _worker.js
-fs.copyFileSync(sourcePath, workerPath);
-console.log('Copied ' + sourcePath + ' -> ' + workerPath);
+// Copy worker.js to _worker.js if source provided
+if (sourcePath) {
+  fs.copyFileSync(sourcePath, workerPath);
+  console.log('Copied ' + sourcePath + ' -> ' + workerPath);
+}
 
 // Read
 let content = fs.readFileSync(workerPath, 'utf8');
@@ -14,13 +16,18 @@ const oldCode = `// - \`Request\`s are handled by the Next server
             const reqOrResp = await middlewareHandler(request, env, ctx);`;
 
 const newCode = `// - Serve static assets from Pages (CSS, JS, images, favicon)
+            // Assets are in the /assets/ subdirectory in the Pages store
             const staticUrl = new URL(request.url);
             if (staticUrl.pathname.startsWith('/_next/') ||
                 staticUrl.pathname.startsWith('/favicon') ||
                 staticUrl.pathname.startsWith('/icon-') ||
                 staticUrl.pathname === '/manifest.json') {
               try {
-                const staticResp = await env.ASSETS.fetch(staticUrl);
+                const assetPath = staticUrl.pathname;
+                // Pages store has these at /assets/... path
+                const storeUrl = new URL(request.url);
+                storeUrl.pathname = '/assets' + assetPath;
+                const staticResp = await env.ASSETS.fetch(storeUrl);
                 if (staticResp.status < 400) {
                   return staticResp;
                 }
