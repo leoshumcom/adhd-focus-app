@@ -33,8 +33,10 @@ export default function HomeworkPage() {
     { id: '3', title: '英语单词拼写', subject: 'english', estimated: 10, completed: false },
   ]);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showBatchAdd, setShowBatchAdd] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskSubject, setNewTaskSubject] = useState('other');
+  const [batchText, setBatchText] = useState('');
 
   // Focus timer
   const [timerRunning, setTimerRunning] = useState(false);
@@ -74,6 +76,16 @@ export default function HomeworkPage() {
     );
   };
 
+  // --- Delete a task ---
+  const deleteTask = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    if (confirm(`确定删除作业「${task.title}」吗？`)) {
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    }
+  };
+
   const startTimer = () => {
     if (timerRunning) return;
     setTimerRunning(true);
@@ -99,6 +111,7 @@ export default function HomeworkPage() {
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
+  // --- Single Add ---
   const addTask = () => {
     if (!newTaskTitle.trim()) return;
     const newId = Date.now().toString();
@@ -116,6 +129,29 @@ export default function HomeworkPage() {
     setShowAddTask(false);
   };
 
+  // --- Batch Add ---
+  const batchAddTasks = () => {
+    if (!batchText.trim()) return;
+    const lines = batchText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length === 0) return;
+
+    const newTasks: Task[] = lines.map((title) => ({
+      id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
+      title,
+      subject: 'other',
+      estimated: 10,
+      completed: false,
+    }));
+
+    setTasks((prev) => [...prev, ...newTasks]);
+    setBatchText('');
+    setShowBatchAdd(false);
+  };
+
   const completedCount = tasks.filter((t) => t.completed).length;
   const progressPct = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
@@ -127,6 +163,22 @@ export default function HomeworkPage() {
     { href: '/rewards', label: '抽奖', icon: '🎁' },
     { href: '/profile', label: '个人中心', icon: '👤' },
   ];
+
+  const modalOverlayStyle = {
+    position: 'fixed' as const,
+    inset: 0,
+    background: 'rgba(0,0,0,0.4)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 200,
+    padding: '1rem',
+  };
+
+  const modalCardStyle = {
+    width: '100%',
+    maxWidth: '380px',
+  };
 
   return (
     <div className="page-content" style={{ paddingTop: '1.5rem' }}>
@@ -152,13 +204,22 @@ export default function HomeworkPage() {
       {/* Task List */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
         <h2 style={{ fontSize: '1rem', fontWeight: 'bold' }}>作业列表</h2>
-        <button
-          className="btn-primary"
-          onClick={() => setShowAddTask(true)}
-          style={{ padding: '0.3rem 1rem', fontSize: '0.8rem' }}
-        >
-          + 添加
-        </button>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button
+            className="btn-primary"
+            onClick={() => setShowBatchAdd(true)}
+            style={{ padding: '0.3rem 0.8rem', fontSize: '0.75rem', background: 'var(--accent-secondary)' }}
+          >
+            📋 批量
+          </button>
+          <button
+            className="btn-primary"
+            onClick={() => setShowAddTask(true)}
+            style={{ padding: '0.3rem 1rem', fontSize: '0.8rem' }}
+          >
+            + 添加
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -172,16 +233,16 @@ export default function HomeworkPage() {
             key={task.id}
             className="card"
             style={{
-              padding: '0.75rem 1rem',
+              padding: '0.75rem 0.75rem 0.75rem 1rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
+              gap: '0.5rem',
               opacity: task.completed ? 0.7 : 1,
-              cursor: 'pointer',
             }}
-            onClick={() => toggleTask(task.id)}
           >
+            {/* Checkbox */}
             <div
+              onClick={() => toggleTask(task.id)}
               style={{
                 width: '24px',
                 height: '24px',
@@ -194,11 +255,14 @@ export default function HomeworkPage() {
                 flexShrink: 0,
                 transition: 'all 0.2s',
                 background: task.completed ? 'var(--accent-green)' : 'transparent',
+                cursor: 'pointer',
               }}
             >
               {task.completed && <span style={{ color: 'white', fontWeight: 'bold' }}>✓</span>}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+
+            {/* Task info */}
+            <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => toggleTask(task.id)}>
               <div style={{
                 fontWeight: 'bold',
                 fontSize: '0.9rem',
@@ -210,28 +274,42 @@ export default function HomeworkPage() {
                 {SUBJECT_LABELS[task.subject]} · {task.estimated}分钟
               </div>
             </div>
+
+            {/* Delete button */}
+            <button
+              onClick={(e) => deleteTask(task.id, e)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#FF6B6B',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                padding: '0.3rem 0.5rem',
+                borderRadius: theme === 'egg' ? '0.5rem' : '0px',
+                opacity: 0.7,
+                transition: 'opacity 0.15s',
+                flexShrink: 0,
+                lineHeight: 1,
+              }}
+              title="删除作业"
+              onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = '0.7'; }}
+            >
+              🗑️
+            </button>
           </div>
         ))}
       </div>
 
-      {/* Add Task Modal */}
+      {/* Add Task Modal (single) */}
       {showAddTask && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 200,
-            padding: '1rem',
-          }}
+          style={modalOverlayStyle}
           onClick={() => setShowAddTask(false)}
         >
           <div
             className="card"
-            style={{ width: '100%', maxWidth: '380px' }}
+            style={modalCardStyle}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>添加作业</h3>
@@ -297,6 +375,71 @@ export default function HomeworkPage() {
                   取消
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Add Modal */}
+      {showBatchAdd && (
+        <div
+          style={modalOverlayStyle}
+          onClick={() => setShowBatchAdd(false)}
+        >
+          <div
+            className="card"
+            style={{ ...modalCardStyle, maxWidth: '420px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>📋 批量添加作业</h3>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+              每行输入一个作业名称，支持多行同时添加
+            </p>
+            <textarea
+              value={batchText}
+              onChange={(e) => setBatchText(e.target.value)}
+              placeholder={`语文课文朗读\n数学练习题\n英语单词抄写\n科学小实验`}
+              rows={6}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '0.6rem 0.8rem',
+                borderRadius: theme === 'egg' ? '1rem' : '0px',
+                border: '2px solid var(--border-default)',
+                fontSize: '0.9rem',
+                fontFamily: 'var(--font-family)',
+                outline: 'none',
+                resize: 'vertical',
+                lineHeight: 1.6,
+              }}
+            />
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem', marginBottom: '0.5rem' }}>
+              {batchText.trim() ? `共 ${batchText.split('\n').filter(l => l.trim()).length} 项` : '请输入作业名称'}
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                className="btn-primary"
+                onClick={batchAddTasks}
+                disabled={!batchText.trim()}
+                style={{ flex: 1, fontSize: '0.85rem', padding: '0.5rem' }}
+              >
+                批量添加
+              </button>
+              <button
+                onClick={() => setShowBatchAdd(false)}
+                style={{
+                  flex: 1,
+                  padding: '0.5rem',
+                  borderRadius: theme === 'egg' ? '1rem' : '0px',
+                  border: '2px solid var(--border-default)',
+                  background: 'white',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-family)',
+                }}
+              >
+                取消
+              </button>
             </div>
           </div>
         </div>

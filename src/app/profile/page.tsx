@@ -23,16 +23,7 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
 
-  const [children, setChildren] = useState<ChildInfo[]>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('adhd-children') : null;
-    if (saved) {
-      try { return JSON.parse(saved); } catch {}
-    }
-    return [
-      { id: '1', name: '小明', age: '8', gender: 'boy', points: 230, streak: 5 },
-    ];
-  });
-
+  const [children, setChildren] = useState<ChildInfo[]>([]);
   const [showAddChild, setShowAddChild] = useState(false);
   const [newChild, setNewChild] = useState({ name: '', age: '', gender: '' as 'boy' | 'girl' | '' });
   const [stats, setStats] = useState({
@@ -42,13 +33,72 @@ export default function ProfilePage() {
     completedGames: 0,
     totalFocusMinutes: 0,
   });
+  const [loadingChildren, setLoadingChildren] = useState(false);
+  const [savingChild, setSavingChild] = useState(false);
+  const [childError, setChildError] = useState('');
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Load children from API when session is ready
   useEffect(() => {
-    if (typeof window !== 'undefined') localStorage.setItem('adhd-children', JSON.stringify(children));
+    if (!session?.user?.id) return;
+
+    const loadChildren = async () => {
+      setLoadingChildren(true);
+      try {
+        const res = await fetch(`/api/children?parent_id=${session.user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.children && data.children.length > 0) {
+            const mapped: ChildInfo[] = data.children.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              age: c.age || c.birth_date || '5',
+              gender: c.gender || '' as 'boy' | 'girl' | '',
+              points: c.total_points || 0,
+              streak: c.streak_days || 0,
+            }));
+            setChildren(mapped);
+            // Also cache in localStorage
+            localStorage.setItem('adhd-children', JSON.stringify(mapped));
+            return;
+          }
+        }
+      } catch {
+        // Fallback to localStorage
+      }
+
+      // Fallback: load from localStorage
+      const saved = localStorage.getItem('adhd-children');
+      if (saved) {
+        try {
+          const cached = JSON.parse(saved);
+          if (cached.length > 0) {
+            setChildren(cached);
+            setLoadingChildren(false);
+            return;
+          }
+        } catch {}
+      }
+
+      // Default fallback
+      setChildren([
+        { id: '1', name: '小明', age: '8', gender: 'boy', points: 230, streak: 5 },
+      ]);
+      setLoadingChildren(false);
+    };
+
+    loadChildren();
+  }, [session]);
+
+  // Save to localStorage as cache
+  useEffect(() => {
+    if (typeof window !== 'undefined' && children.length > 0) {
+      localStorage.setItem('adhd-children', JSON.stringify(children));
+    }
   }, [children]);
 
+  // Compute stats
   useEffect(() => {
     const points = typeof window !== 'undefined' ? localStorage.getItem('adhd-points') : null;
     const totalPoints = points ? parseInt(points, 10) : children.reduce((s, c) => s + c.points, 0);
@@ -62,19 +112,53 @@ export default function ProfilePage() {
     });
   }, [children]);
 
-  const addChild = () => {
+  // Add child - sync to API
+  const addChild = async () => {
     if (!newChild.name.trim()) return;
-    const child: ChildInfo = {
-      id: Date.now().toString(),
-      name: newChild.name.trim(),
-      age: newChild.age || '5',
-      gender: newChild.gender,
-      points: 0,
-      streak: 0,
-    };
-    setChildren((prev) => [...prev, child]);
-    setNewChild({ name: '', age: '', gender: '' });
-    setShowAddChild(false);
+
+    if (!session?.user?.id) {
+      setChildError('请先登录');
+      return;
+    }
+
+    setSavingChild(true);
+    setChildError('');
+
+    try {
+      const res = await fetch('/api/children', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parent_id: session.user.id,
+          name: newChild.name.trim(),
+          gender: newChild.gender || 'boy',
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || '添加失败');
+      }
+
+      const data = await res.json();
+
+      const child: ChildInfo = {
+        id: data.childId || Date.now().toString(),
+        name: newChild.name.trim(),
+        age: newChild.age || '5',
+        gender: newChild.gender,
+        points: 0,
+        streak: 0,
+      };
+
+      setChildren((prev) => [...prev, child]);
+      setNewChild({ name: '', age: '', gender: '' });
+      setShowAddChild(false);
+    } catch (error: any) {
+      setChildError(error.message || '添加孩子失败，请稍后重试');
+    } finally {
+      setSavingChild(false);
+    }
   };
 
   const removeChild = (id: string) => {
@@ -82,6 +166,7 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('adhd-children');
     await signOut({ callbackUrl: '/' });
   };
 
@@ -122,7 +207,7 @@ export default function ProfilePage() {
             width: '72px',
             height: '72px',
             borderRadius: '50%',
-            background: `linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))`,
+            background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -216,7 +301,11 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {children.length === 0 ? (
+        {loadingChildren ? (
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '1rem 0' }}>
+            加载中...
+          </div>
+        ) : children.length === 0 ? (
           <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '1rem 0' }}>
             还没有添加孩子
           </div>
@@ -292,6 +381,24 @@ export default function ProfilePage() {
             <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>
               {theme === 'egg' ? '➕ 添加孩子' : '➕ ADD CHILD'}
             </h3>
+
+            {childError && (
+              <div
+                style={{
+                  background: '#FFF0F0',
+                  border: '1px solid #FF6B6B',
+                  borderRadius: theme === 'egg' ? '0.75rem' : '0px',
+                  padding: '0.4rem 0.6rem',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.8rem',
+                  color: '#CC0000',
+                  textAlign: 'center',
+                }}
+              >
+                {childError}
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', fontWeight: 'bold' }}>名字</label>
@@ -345,13 +452,13 @@ export default function ProfilePage() {
                 <button
                   className="btn-primary"
                   onClick={addChild}
-                  disabled={!newChild.name.trim()}
+                  disabled={!newChild.name.trim() || savingChild}
                   style={{ flex: 1, fontSize: '0.85rem', padding: '0.5rem' }}
                 >
-                  添加
+                  {savingChild ? '保存中...' : '添加'}
                 </button>
                 <button
-                  onClick={() => setShowAddChild(false)}
+                  onClick={() => { setShowAddChild(false); setChildError(''); }}
                   style={{
                     flex: 1,
                     padding: '0.5rem',
