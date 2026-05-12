@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
+import { useSession } from 'next-auth/react';
 
 interface GameCard {
   id: string;
@@ -40,6 +41,7 @@ export default function TrainPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { theme } = useTheme();
+  const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
 
   const [games, setGames] = useState<GameCard[]>(GAMES);
@@ -62,10 +64,11 @@ export default function TrainPage() {
   const handleCheckin = async () => {
     setCheckinLoading(true);
     try {
+      const parentId = (session?.user as any)?.id;
       const res = await fetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: today }),
+        body: JSON.stringify({ date: today, parent_id: parentId }),
       });
       const data = await res.json();
       if (res.ok || data.success) {
