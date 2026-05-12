@@ -4,17 +4,73 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme-context';
 import { useEffect, useState } from 'react';
 
+const BANNER_TEXT = '本工具由沈采奕奕爸爸制作（抖音号：7SEO）您可以加抖音主页群提出您的建议，您的反馈十分重要！';
+
 export default function HomePage() {
   const router = useRouter();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [showMarquee, setShowMarquee] = useState(true);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    // Check if marquee was shown recently
+    const lastShown = localStorage.getItem('adhd-marquee-last');
+    if (lastShown) {
+      const elapsed = Date.now() - parseInt(lastShown, 10);
+      if (elapsed < 15 * 60 * 1000) {
+        setShowMarquee(false);
+      }
+    }
+  }, []);
+
+  // Marquee cycle: show → scroll → hide → wait 15min → show again
+  const handleMarqueeEnd = () => {
+    setShowMarquee(false);
+    localStorage.setItem('adhd-marquee-last', Date.now().toString());
+    // Show again after 15 minutes
+    setTimeout(() => {
+      setShowMarquee(true);
+    }, 15 * 60 * 1000);
+  };
 
   if (!mounted) return null;
 
   return (
     <div className="page-content" style={{ paddingTop: '2rem' }}>
+      {/* ===== TOP MARQUEE ===== */}
+      {showMarquee && (
+        <div style={{
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          background: theme === 'egg'
+            ? 'linear-gradient(90deg, #FF8FAB, #C29BFF)'
+            : '#6B8C42',
+          borderRadius: theme === 'egg' ? '1rem' : '0px',
+          padding: '0.5rem 0',
+          marginBottom: '1rem',
+          border: theme === 'minecraft'
+            ? '4px solid #3B3B3B'
+            : 'none',
+        }}>
+          <div
+            onAnimationEnd={handleMarqueeEnd}
+            style={{
+              display: 'inline-block',
+              whiteSpace: 'nowrap',
+              color: '#fff',
+              fontSize: '0.85rem',
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-family)',
+              animation: 'marquee 12s linear forwards',
+              paddingLeft: '100%',
+            }}
+          >
+            {BANNER_TEXT}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <div className="animate-float" style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>
@@ -99,8 +155,35 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* ===== BOTTOM FIXED BANNER ===== */}
+      <div style={{
+        marginTop: '2rem',
+        padding: '0.75rem 1rem',
+        background: theme === 'egg'
+          ? 'linear-gradient(135deg, #FFE4EC, #F8F0FF)'
+          : '#A87D4D',
+        borderRadius: theme === 'egg' ? '1rem' : '0px',
+        border: theme === 'minecraft'
+          ? '4px solid #5C3A1E'
+          : '2px solid var(--border-default)',
+        textAlign: 'center',
+        fontSize: '0.75rem',
+        color: theme === 'minecraft' ? '#fff' : 'var(--text-secondary)',
+        lineHeight: 1.5,
+      }}>
+        {BANNER_TEXT}
+      </div>
+
       {/* Footer spacing */}
       <div style={{ height: '1rem' }} />
+
+      {/* Marquee keyframes - injected once */}
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-100%); }
+        }
+      `}</style>
     </div>
   );
 }
