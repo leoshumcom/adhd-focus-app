@@ -25,8 +25,35 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
-      - name: Rename worker.js to _worker.js for Pages
-        run: cp .open-next/worker.js .open-next/_worker.js
+      - name: Create _worker.js with static file handling
+        run: |
+          cp .open-next/worker.js .open-next/_worker.js
+          # Inject static asset serving via env.ASSETS before middleware handler
+          python3 -c "
+import re, sys
+with open('.open-next/_worker.js', 'r') as f:
+    content = f.read()
+# Insert ASSETS check before middleware handler
+old = '''// - `Request`s are handled by the Next server
+            const reqOrResp = await middlewareHandler(request, env, ctx);'''
+new = '''// - Serve static assets from Pages (CSS, JS, images, etc)
+            const staticUrl = new URL(request.url);
+            if (staticUrl.pathname.startsWith('/_next/') ||
+                staticUrl.pathname.startsWith('/favicon') ||
+                staticUrl.pathname.startsWith('/icon-') ||
+                staticUrl.pathname === '/manifest.json') {
+              const staticResp = await env.ASSETS.fetch(staticUrl);
+              if (staticResp.status < 400) {
+                return staticResp;
+              }
+            }
+            // - `Request`s are handled by the Next server
+            const reqOrResp = await middlewareHandler(request, env, ctx);'''
+content = content.replace(old, new)
+with open('.open-next/_worker.js', 'w') as f:
+    f.write(content)
+print('Static file serving added')
+"
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy .open-next --project-name=adhd-focus-app --branch main
