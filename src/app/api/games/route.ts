@@ -76,10 +76,43 @@ export async function POST(request: Request) {
       ).bind(uuid(), child_id, earnedPoints, 'game', id, `游戏: ${game_type}`).run();
     }
 
+    // Auto checkin: completing any game counts as today's checkin
+    if (completed) {
+      const existingCheckin = await db.prepare(
+        'SELECT id FROM daily_checkins WHERE child_id = ? AND checkin_date = ?'
+      ).bind(child_id, date).first() as any;
+
+      if (!existingCheckin) {
+        const checkinId = uuid();
+        await db.prepare(
+          `INSERT INTO daily_checkins (id, child_id, checkin_date, points_earned, games_completed)
+           VALUES (?, ?, ?, ?, 1)`
+        ).bind(checkinId, child_id, date, 5).run();
+
+        // Update streak
+        const child = await db.prepare(
+          'SELECT last_checkin_date, streak_days FROM children WHERE id = ?'
+        ).bind(child_id).first() as any;
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        let newStreak = 1;
+        if (child?.last_checkin_date === yesterdayStr) {
+          newStreak = (child.streak_days || 0) + 1;
+        }
+
+        await db.prepare(
+          'UPDATE children SET total_points = total_points + 5, streak_days = ?, last_checkin_date = ? WHERE id = ?'
+        ).bind(newStreak, date, child_id).run();
+      }
+    }
+
     return NextResponse.json({
       success: true,
       recordId: id,
       pointsEarned: earnedPoints,
+      autoCheckedIn: completed,
     });
   } catch (error) {
     console.error('Game post error:', error);
